@@ -63,10 +63,60 @@ FONCTIONS={"sinus":np.sin,"cosinus":np.cos,"exp":np.exp,"ln":lambda x: np.log(1+
 #4.3
 with st.sidebar:
     f=st.selectbox("Choisissez une fonction",FONCTIONS)
-    st.slider("Choisissez une valeur", 0, 10,3)
+    ordre=st.slider("Choisissez une valeur", 0, 10,3)
     largeur=st.slider("Choisissez la largeur de l'intervalle étudié",2,20,12)
+    #Ajout pour la question 5.1:
+    seuil=st.select_slider("Choisissez un seuil", options=[10**(-6),10**(-5),10**(-4),10**(-3),10**(-2)], value=10**(-3))
+    #Ajout pour la question 5.2:
+    afficher=st.checkbox("Afficher l'erreur")
 
 #4.4
-X=np.arange(-largeur/2,largeur/2,400)
-Y=f(X)
-Y_taylor=taylor2(X,f,10)
+X=np.linspace(-largeur/2,largeur/2,400)
+Y=FONCTIONS[f](X)
+Y_taylor=taylor2(X,FONCTIONS[f],ordre)
+fig, ax = plt.subplots()
+ax.plot(X,Y, label=f,color="blue")
+#la ligne suivante est mise en commentaire car on modifie à la question 6
+#ax.plot(X,Y_taylor, label=f+" approché à l'ordre "+str(ordre), color="orange")
+#le ax.legend et st.pyplot(fig) est placé en fin de programme
+
+#Question
+#Quand on s'éloigne de 0, et à n fixé,
+#l'approximation est de moins en moins bonne
+#Pour ln(1+x), quand on augment n, on alterne entre un polynôme qui tend vers - l'infini
+#et un polynôme qui tend vers + l'infini
+
+#5
+#5.1
+#Je m'inspire de ma fonction erreur de la partie 2
+def taux_coincidence(Y,Y_taylor,seuil):
+    return len((Y-Y_taylor)[(Y-Y_taylor)<=seuil])/len(X)
+ax.set_title("Taux de coïncidence à "+str(seuil)+ " : "+str(taux_coincidence(Y,Y_taylor,seuil)))
+#Question
+#Avec mon implémentation, la comparaison avec nan est exacte
+#donc cela augmente artificiellement le taux de coincidence
+
+#5.2
+if afficher:
+    ax.plot(X,abs(Y-Y_taylor),label="erreur",color="green")
+
+#6.
+with st.sidebar:
+    if "ordres" not in st.session_state:
+        st.session_state.ordres = []
+    if st.button("Ajouter cet ordre à la comparaison"):
+        if ordre not in st.session_state.ordres:
+            st.session_state.ordres.append(ordre)
+    if st.button("Réinitialiser"):
+        st.session_state.ordres=[]
+        
+    st.write("Ordres comparés actuellement :", st.session_state.ordres)
+
+
+#tracé
+for k in st.session_state.ordres:
+    Y_taylor_k = taylor2(X, FONCTIONS[f], k)
+    ax.plot(X, Y_taylor_k, label=f"{f} approché à l'ordre {k}")
+
+ax.legend()
+st.pyplot(fig)
